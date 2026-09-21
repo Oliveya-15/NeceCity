@@ -1,0 +1,32 @@
+# NeceCity training hyperparameters.
+# Centralized here so train.py has no magic numbers and a run can be
+# reproduced/tuned by editing this file instead of the code.
+
+epochs: 80
+batch_size: 16
+image_size: 640
+patience: 15          # early stopping: stop if val mAP doesn't improve for this many epochs
+learning_rate: 0.01   # initial LR (ultralytics default SGD schedule)
+optimizer: auto        # "auto" lets ultralytics pick SGD/AdamW based on dataset size
+seed: 42
+workers: 4
+
+# Data augmentation (ultralytics defaults tuned down slightly - street
+# scenes rarely appear upside-down or heavily rotated).
+augmentation:
+  degrees: 5.0
+  fliplr: 0.5
+  flipud: 0.0
+  mosaic: 1.0
+  mixup: 0.0
+  hsv_h: 0.015
+  hsv_s: 0.7
+  hsv_v: 0.4
+
+train_val_test_split:
+  train: 0.70
+  val: 0.20
+  test: 0.10
+
+output_dir: ../weights
+run_name: nececity_yolo

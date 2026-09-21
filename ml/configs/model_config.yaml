@@ -1,0 +1,24 @@
+# NeceCity model configuration.
+#
+# architecture: which YOLO variant to train. "yolov8n" (nano) is the
+#   recommended default for a minor project - it trains fast on free
+#   Colab GPUs / even CPU, and is small enough to load quickly in the
+#   FastAPI backend. "yolov8s" is documented as a stronger alternative if
+#   more compute/time is available.
+#
+# initialization: "pretrained" (transfer learning from weights trained on
+#   COCO) or "random" (train from scratch). Transfer learning is
+#   STRONGLY recommended for a minor project - with a small dataset,
+#   random initialization typically needs far more data/epochs to
+#   converge to a usable model. See ml/data/README.md section
+#   "From-scratch vs transfer learning" for the full explanation you can
+#   reuse in your viva.
+architecture: yolov8n
+initialization: pretrained   # "pretrained" | "random"
+pretrained_weights: yolov8n.pt  # downloaded automatically by ultralytics on first run
+
+num_classes: 6
+image_size: 640
+
+confidence_threshold: 0.35
+iou_threshold: 0.45

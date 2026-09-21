@@ -1,0 +1,17 @@
+# NeceCity ML pipeline dependencies.
+#
+# This file is intentionally separate from backend/requirements.txt - per
+# the project's architecture, model TRAINING is a separable stage that can
+# run on a local machine or in Google Colab, independent of whether the
+# web application is running anywhere. The web app only needs
+# `ultralytics` + `torch` at inference time (already listed in
+# backend/requirements.txt) to load the .pt weights this pipeline produces.
+
+ultralytics==8.3.28
+torch==2.4.1
+torchvision==0.19.1
+opencv-python-headless==4.10.0.84
+PyYAML==6.0.2
+pandas==2.2.3
+matplotlib==3.9.2
+Pillow==10.4.0

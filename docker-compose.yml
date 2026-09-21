@@ -1,0 +1,64 @@
+services:
+  database:
+    image: postgis/postgis:16-3.4
+    container_name: nececity-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nececity}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nececity}
+      POSTGRES_DB: ${POSTGRES_DB:-nececity}
+    volumes:
+      - nececity_db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nececity}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: nececity-backend
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nececity}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nececity}
+      POSTGRES_DB: ${POSTGRES_DB:-nececity}
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+      UPLOAD_DIR: /app/uploads
+      MODEL_PATH: /ml/weights/nececity_yolo.pt
+      CORS_ORIGINS: '["http://localhost:5173","http://localhost:8080","http://localhost"]'
+      ENVIRONMENT: production
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_API_BASE_URL: ${LLM_API_BASE_URL:-https://api.openai.com/v1}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+    volumes:
+      - nececity_uploads:/app/uploads
+      - ./ml/weights:/ml/weights:ro
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "python -m alembic upgrade head &&
+             python -m app.seed.seed_data &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+    container_name: nececity-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  nececity_db_data:
+  nececity_uploads:

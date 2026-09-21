@@ -1,0 +1,38 @@
+# ---- Environment / secrets ----
+.env
+*.env
+!.env.example
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# ---- Node / frontend ----
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ---- Uploaded / generated files ----
+backend/uploads/
+*.log
+
+# ---- ML artifacts ----
+ml/weights/*.pt
+!ml/weights/README.md
+ml/training/runs/
+ml/evaluation/*.json
+*.pt
+*.onnx
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ---- Docker ----
+*.pid

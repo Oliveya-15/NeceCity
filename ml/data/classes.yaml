@@ -1,0 +1,26 @@
+# NeceCity object detection classes
+#
+# IMPORTANT: index order matters. It must exactly match:
+#   1. The `names:` list index order in ml/training/dataset.yaml (which
+#      YOLO uses to assign class IDs during training), and
+#   2. backend/app/ml/classes.py, which loads THIS file at runtime so the
+#      backend always agrees with whatever weights were trained against it.
+#
+# If you add/remove/reorder a class, retrain the model - a mismatch here
+# silently mislabels every detection.
+names:
+  0: pothole
+  1: road_damage
+  2: garbage
+  3: waterlogging
+  4: damaged_road_sign
+  5: open_drain
+
+# Human-readable descriptions used in annotation guidelines (ml/data/README.md)
+descriptions:
+  pothole: "A depression/hole in the road surface caused by wear or water damage."
+  road_damage: "Cracking, crumbling edges, or broken road surface not classified as a discrete pothole."
+  garbage: "Accumulated solid waste/litter dumped on a street, footpath, or drain."
+  waterlogging: "Standing/pooled water on a road or footpath after rain or drainage failure."
+  damaged_road_sign: "A traffic/road sign that is bent, faded, broken, or fallen."
+  open_drain: "A drain/culvert missing its cover, exposing an open channel."
