@@ -1,29 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { Bot, Loader2, Send, Sparkles, User } from 'lucide-react'
 import { api, ApiError } from '../services/api'
+import MarkdownMessage from './MarkdownMessage'
 
 const SUGGESTIONS = [
+  'What are the critical issues right now?',
   "What's the biggest problem in my city?",
+  'Which problems should be fixed first?',
   'Who can help with garbage collection?',
-  'How do risk scores work?',
-  'How do I report a pothole?',
 ]
-
-// Helper function to parse basic markdown bolding (**text**) for assistant messages
-function formatAssistantContent(content) {
-  if (!content) return null
-
-  // Split by bold markdown syntax **...**
-  const parts = content.split(/(\*\*.*?\*\*)/g)
-
-  return parts.map((part, index) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      const boldText = part.slice(2, -2)
-      return <strong key={index} className="font-semibold text-ink-900">{boldText}</strong>
-    }
-    return part
-  })
-}
 
 function Bubble({ role, content, mode }) {
   const isUser = role === 'user'
@@ -36,13 +21,13 @@ function Bubble({ role, content, mode }) {
       >
         {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
       </span>
-      <div className={`max-w-[80%] ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+      <div className={`${isUser ? 'max-w-[80%] items-end' : 'max-w-[92%] min-w-0 items-start'} flex flex-col gap-1`}>
         <div
-          className={`rounded-lg px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+          className={`rounded-lg px-4 py-2.5 text-sm leading-relaxed ${isUser ? 'whitespace-pre-wrap' : ''} ${
             isUser ? 'bg-navy-900 text-white' : 'bg-slate-50 text-ink-900 border border-slate-100'
           }`}
         >
-          {isUser ? content : formatAssistantContent(content)}
+          {isUser ? content : <MarkdownMessage content={content} />}
         </div>
         {!isUser && mode && (
           <span className="text-[10px] text-ink-300 px-1">
@@ -58,7 +43,7 @@ export default function ChatPanel({ cityId, cityName }) {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: `Hi! I'm the NeceCity assistant${cityName ? ` for ${cityName}` : ''}. Ask me about current problem statistics, how risk scores work, or which organizations can help with a specific issue.`,
+      content: `Hi! I'm the NeceCity assistant${cityName ? ` for ${cityName}` : ''}. Ask me about critical issues, a specific road or ward, how risk scores work, or which organizations can help.`,
       mode: 'rule_based',
     },
   ])

@@ -48,6 +48,33 @@ class Settings(BaseSettings):
     MODEL_CONFIDENCE_THRESHOLD: float = 0.35
     MODEL_IOU_THRESHOLD: float = 0.45
     MODEL_IMAGE_SIZE: int = 640
+    # Detections between MODEL_MIN_CONFIDENCE and MODEL_CONFIDENCE_THRESHOLD are
+    # still returned to the reviewer, flagged "low confidence - please verify".
+    # A model trained on a small dataset is often unsure on photos it has never
+    # seen; hiding every uncertain box makes it look like it found nothing, so
+    # we surface them and let the human confirm or reject (nothing is stored as
+    # a Problem until the user confirms).
+    MODEL_MIN_CONFIDENCE: float = 0.10
+    MODEL_MAX_DETECTIONS: int = 10
+    # Test-time augmentation (multi-scale + flip). Slower (~2-3x) but noticeably
+    # more robust on unseen photos.
+    MODEL_USE_TTA: bool = True
+
+    # ---- Area lookup for the AI Recommendations chat ----
+    # When a user asks about a place ("Sevoke Road", "Kestopur") that is not a
+    # stored ward/road name, the backend geocodes it (OpenStreetMap Nominatim by
+    # default - free, no key) and counts reported problems within a radius.
+    GEOCODER_ENABLED: bool = True
+    GEOCODER_URL: str = "https://nominatim.openstreetmap.org/search"
+    # Nominatim's usage policy requires an identifying User-Agent.
+    GEOCODER_USER_AGENT: str = "NeceCity/0.1 (civic infrastructure monitoring project)"
+    GEOCODER_TIMEOUT_SECONDS: float = 6.0
+    # A geocoded place further than this from the selected city's centre is
+    # rejected (prevents "Kestopur" resolving to an unrelated place elsewhere).
+    AREA_MAX_DISTANCE_FROM_CITY_KM: float = 45.0
+    AREA_MIN_RADIUS_M: int = 800
+    AREA_MAX_RADIUS_M: int = 4000
+    AREA_MAX_PROBLEMS_LISTED: int = 6
 
     # ---- CORS ----
     CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
@@ -70,7 +97,16 @@ class Settings(BaseSettings):
     LLM_API_KEY: str = ""
     LLM_API_BASE_URL: str = "https://api.openai.com/v1"
     LLM_MODEL: str = "gpt-4o-mini"
-    LLM_REQUEST_TIMEOUT_SECONDS: float = 20.0
+    LLM_REQUEST_TIMEOUT_SECONDS: float = 45.0
+    # Output budget for chat answers. Reasoning models (e.g. gpt-oss on Groq) spend
+    # part of this budget "thinking" before they write the answer, so a small value
+    # produces cut-off or empty replies. The caller also retries once with double
+    # the budget if the provider reports the reply was cut off.
+    LLM_MAX_TOKENS: int = 2500
+    # Optional: "low" | "medium" | "high". Sent as `reasoning_effort` ONLY when set.
+    # Recommended "low" for Groq's openai/gpt-oss-* models (faster, leaves more of
+    # the budget for the answer). Leave blank for providers that don't support it.
+    LLM_REASONING_EFFORT: str = ""
 
     # ---- Pagination ----
     DEFAULT_PAGE_SIZE: int = 25

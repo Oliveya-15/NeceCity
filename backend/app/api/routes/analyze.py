@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.db.session import get_db
 from app.ml.preprocessing import ImageValidationError, validate_image_upload
@@ -31,6 +32,8 @@ async def analyze_image(file: UploadFile = File(...), db: Session = Depends(get_
 
     db.commit()
 
+    low_conf_cutoff = get_settings().MODEL_CONFIDENCE_THRESHOLD
+
     return AnalyzeImageResponse(
         image_id=image.id,
         model_available=inference.model_available,
@@ -44,6 +47,7 @@ async def analyze_image(file: UploadFile = File(...), db: Session = Depends(get_
                 id=stored.id,
                 problem_type=stored.problem_type.value,
                 confidence=stored.confidence,
+                low_confidence=stored.confidence < low_conf_cutoff,
                 severity_suggested=stored.severity_suggested.value,
                 bbox=BoundingBox(
                     x_min=stored.bbox_x_min, y_min=stored.bbox_y_min,

@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { BarChart3, LayoutGrid, Map, ScanSearch, ShieldCheck, Sparkles, X } from 'lucide-react'
+import { BarChart3, Camera, LayoutGrid, Map, ShieldCheck, Sparkles, X } from 'lucide-react'
 import logo from '../assets/nececity-logo.png'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Command Center', icon: LayoutGrid, end: true },
   { to: '/monitor', label: 'City Monitor', icon: Map },
-  { to: '/inspect', label: 'Inspect & Analyze', icon: ScanSearch },
+  { to: '/report', label: 'Report Problem', icon: Camera },
   { to: '/insights', label: 'Insights', icon: BarChart3 },
   { to: '/action-center', label: 'Action Center', icon: ShieldCheck },
   { to: '/advice', label: 'AI Recommendations', icon: Sparkles },

@@ -65,7 +65,7 @@ export const api = {
   // ---- Map ----
   getMapProblems: (params) => request(`/map/problems${qs(params)}`),
 
-  // ---- Inspect & Analyze ----
+  // ---- Report Problem ----
   analyzeImage: (file) => {
     const form = new FormData()
     form.append('file', file)
@@ -73,6 +73,8 @@ export const api = {
   },
   verifyDetection: (detectionId, payload) =>
     request(`/detections/${detectionId}/verify`, { method: 'POST', body: JSON.stringify(payload) }),
+  // A region the user drew on the photo themselves (normalized 0-1 box).
+  createUserRegion: (payload) => request('/detections/user-region', { method: 'POST', body: JSON.stringify(payload) }),
   createManualProblem: (payload) => request('/problems/manual', { method: 'POST', body: JSON.stringify(payload) }),
 
   // ---- Analytics ----

@@ -1,0 +1,20 @@
+# Ultralytics YOLO dataset definition.
+#
+# By default this points at the small bundled DEMO dataset
+# (ml/data/demo_dataset) so `train.py` runs end-to-end out of the box as a
+# pipeline smoke test. For real training, point `path` at your actual
+# annotated dataset (see ml/data/README.md) - the folder layout must match
+# the same images/{train,val}, labels/{train,val} structure.
+
+path: C:/Work/nececity/ml/data/real_dataset   # relative to this file's directory
+train: images/train
+val: images/val
+
+# names must exactly match ml/data/classes.yaml (index order matters).
+names:
+  0: pothole
+  1: road_damage
+  2: garbage
+  3: waterlogging
+  4: damaged_road_sign
+  5: open_drain

@@ -238,6 +238,11 @@ Once you see Uvicorn running on http://0.0.0.0:8000, open:
 http://localhost:8080 — the app
 http://localhost:8000/docs — API docs, if you want to poke at it directly
 
+New Changes Push Command :
+git add .
+git commit -m "Describe what changes you made here"
+git push
+
 ## 19. Demo data
 
 `backend/app/seed/seed_data.py` populates all 8 configured West Bengal
@@ -291,3 +296,8 @@ structured so these can be added without a rewrite.
 
 Built as an MCA minor project. Adapt freely for coursework, portfolio, or
 further development.
+
+
+
+
+

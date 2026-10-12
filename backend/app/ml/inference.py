@@ -145,11 +145,16 @@ class NeceCityDetector:
             )
 
         with self._lock:  # ultralytics models are not guaranteed thread-safe
+            # Use the LOW floor here, not MODEL_CONFIDENCE_THRESHOLD: the API layer
+            # flags anything under the threshold as "low confidence" so the user
+            # can still review it (see app/api/routes/analyze.py).
             results = self._model.predict(
                 source=image_path,
-                conf=self._settings.MODEL_CONFIDENCE_THRESHOLD,
+                conf=min(self._settings.MODEL_MIN_CONFIDENCE, self._settings.MODEL_CONFIDENCE_THRESHOLD),
                 iou=self._settings.MODEL_IOU_THRESHOLD,
                 imgsz=self._settings.MODEL_IMAGE_SIZE,
+                max_det=self._settings.MODEL_MAX_DETECTIONS,
+                augment=self._settings.MODEL_USE_TTA,
                 verbose=False,
             )
 

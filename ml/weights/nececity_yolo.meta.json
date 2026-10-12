@@ -1,0 +1,9 @@
+{
+  "trained_at": "2026-09-24T15:35:34.971232Z",
+  "dataset_path": "C:\\Work\\nececity\\ml\\training\\dataset_real.yaml",
+  "is_bundled_demo_dataset": false,
+  "epochs": 80,
+  "architecture": "yolov8n",
+  "initialization": "pretrained",
+  "ultralytics_version": "8.3.28"
+}

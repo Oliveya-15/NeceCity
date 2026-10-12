@@ -123,7 +123,11 @@ def get_problem(problem_id: int, db: Session = Depends(get_db)):
         "location": problem.location,
         "risk": problem.risk_score,
         "image": image_out,
-        "confidence": problem.source_detection.confidence if problem.source_detection else None,
+        "confidence": (
+            problem.source_detection.confidence
+            if problem.source_detection and problem.source_detection.model_version != "user-marked"
+            else None
+        ),
         "first_detected_at": problem.first_detected_at,
         "last_detected_at": problem.last_detected_at,
         "resolution": problem.resolution,

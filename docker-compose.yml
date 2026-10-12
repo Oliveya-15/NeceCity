@@ -37,6 +37,8 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_API_BASE_URL: ${LLM_API_BASE_URL:-https://api.openai.com/v1}
       LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-2500}
+      LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-}
     volumes:
       - nececity_uploads:/app/uploads
       - ./ml/weights:/ml/weights:ro

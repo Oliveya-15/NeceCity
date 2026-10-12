@@ -153,7 +153,7 @@ export default function ActionCenter() {
               ))}
             </ul>
           ) : (
-            <EmptyState title="No prioritized problems to show." description="Confirm some detections in Inspect & Analyze to populate this list." />
+            <EmptyState title="No prioritized problems to show." description="Submit a report from Report Problem to populate this list." />
           )}
         </section>
       )}
