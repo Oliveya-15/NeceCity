@@ -1,0 +1,22 @@
+# Slim requirements for FREE hosting (Render free = 512 MB RAM).
+# Differences from requirements.txt: NO torch, NO ultralytics, NO opencv,
+# NO geopandas (none of them are needed at runtime with the ONNX model).
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+pydantic==2.9.2
+pydantic-settings==2.5.2
+SQLAlchemy==2.0.35
+alembic==1.13.2
+psycopg2-binary==2.9.9
+GeoAlchemy2==0.15.2
+pandas==2.2.3
+numpy==1.26.4
+scikit-learn==1.5.2
+shapely==2.0.6
+Pillow==10.4.0
+onnxruntime==1.19.2
+reportlab==4.2.5
+httpx==0.27.2
+python-dotenv==1.0.1
+PyYAML==6.0.2
