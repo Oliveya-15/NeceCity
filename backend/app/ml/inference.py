@@ -40,6 +40,10 @@ try:
 except ImportError:  # pragma: no cover - exercised when torch/ultralytics aren't installed
     _ULTRALYTICS_AVAILABLE = False
 
+# Lightweight torch-free backend, used when MODEL_PATH points to a .onnx file
+# (this is what the free-hosting deployment uses - see DEPLOYMENT.md).
+from app.ml.onnx_runtime import ONNX_AVAILABLE as _ONNX_AVAILABLE, OnnxYolo
+
 
 class NeceCityDetector:
     """
@@ -88,8 +92,14 @@ class NeceCityDetector:
 
     def _load(self) -> None:
         weights_path: Path = self._settings.resolved_model_path
+        self._use_onnx = weights_path.suffix.lower() == ".onnx"
 
-        if not _ULTRALYTICS_AVAILABLE:
+        if self._use_onnx:
+            if not _ONNX_AVAILABLE:
+                self._unavailable_reason = "The 'onnxruntime' package is not installed in this environment."
+                logger.warning("ML model not loaded: %s", self._unavailable_reason)
+                return
+        elif not _ULTRALYTICS_AVAILABLE:
             self._unavailable_reason = (
                 "The 'ultralytics'/'torch' packages are not installed in this environment."
             )
@@ -106,7 +116,7 @@ class NeceCityDetector:
             return
 
         try:
-            self._model = YOLO(str(weights_path))
+            self._model = OnnxYolo(str(weights_path)) if self._use_onnx else YOLO(str(weights_path))
             self._training_data_warning = self._load_provenance_warning(weights_path)
             logger.info("NeceCity YOLO model loaded from %s", weights_path)
             if self._training_data_warning:
@@ -144,6 +154,9 @@ class NeceCityDetector:
                 or "ML model is not configured. Add the trained NeceCity model weights and configure MODEL_PATH.",
             )
 
+        if self._use_onnx:
+            return self._predict_onnx(image_path, image_width, image_height)
+
         with self._lock:  # ultralytics models are not guaranteed thread-safe
             # Use the LOW floor here, not MODEL_CONFIDENCE_THRESHOLD: the API layer
             # flags anything under the threshold as "low confidence" so the user
@@ -179,6 +192,42 @@ class NeceCityDetector:
                     )
                 )
 
+        return InferenceResponse(
+            model_available=True,
+            model_version=self.model_version,
+            image_width=image_width,
+            image_height=image_height,
+            detections=score_detections(raw_detections),
+            training_data_warning=self._training_data_warning,
+        )
+
+
+    def _predict_onnx(self, image_path: str, image_width: int, image_height: int) -> InferenceResponse:
+        with self._lock:
+            boxes = self._model.predict(
+                image_path,
+                conf=min(self._settings.MODEL_MIN_CONFIDENCE, self._settings.MODEL_CONFIDENCE_THRESHOLD),
+                iou=self._settings.MODEL_IOU_THRESHOLD,
+                imgsz=self._settings.MODEL_IMAGE_SIZE,
+                max_det=self._settings.MODEL_MAX_DETECTIONS,
+            )  # note: test-time augmentation (MODEL_USE_TTA) is not available in the ONNX backend
+
+        raw_detections: list[RawDetection] = []
+        for box in boxes:
+            problem_type = self._class_index.get(box.class_id)
+            if problem_type is None:
+                logger.warning("Unknown class id %s returned by model; skipping detection.", box.class_id)
+                continue
+            raw_detections.append(
+                RawDetection(
+                    problem_type=problem_type,
+                    confidence=round(box.confidence, 4),
+                    bbox_x_min=round(box.x_min, 4),
+                    bbox_y_min=round(box.y_min, 4),
+                    bbox_x_max=round(box.x_max, 4),
+                    bbox_y_max=round(box.y_max, 4),
+                )
+            )
         return InferenceResponse(
             model_available=True,
             model_version=self.model_version,
