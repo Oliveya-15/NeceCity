@@ -1,303 +1,471 @@
-# NeceCity
+<div align="center">
 
-**AI-powered urban infrastructure monitoring & decision-support system.**
+<img src="public/full_logo.png" alt="NeceCity" width="320"/>
 
-NeceCity detects urban infrastructure problems (potholes, road damage,
-garbage, waterlogging, damaged signage, open drains) from street-level
-photographs using a project-owned, locally-trained YOLO computer vision
-model, combines detections with geographic and historical data, computes
-an explainable risk/priority score, and helps a city track problems from
-detection through resolution.
+### AI-powered urban infrastructure monitoring & decision-support system
+**See the problem → understand it → score the risk → prioritize → act → track**
 
-This is the **current minor-project version**: six working sections
-(Command Center, City Monitor, Inspect & Analyze, Insights, Action
-Center, AI Recommendations), a real PostgreSQL/PostGIS database, a real
-FastAPI backend, a real React frontend, and a real (separately
-trainable) ML pipeline - built to be demoed, explained in a viva, and
-extended later.
+[![License: MIT](https://img.shields.io/badge/License-MIT-FD6001?style=flat-square)](#-license)
+![MCA Project](https://img.shields.io/badge/MCA-Minor%20Project-FD6001?style=flat-square)
+![Frontend](https://img.shields.io/badge/Frontend-React%20%7C%20Vite%20%7C%20Tailwind-031D46?style=flat-square&logo=react&logoColor=white)
+![Backend](https://img.shields.io/badge/Backend-FastAPI-031D46?style=flat-square&logo=fastapi&logoColor=white)
+![Database](https://img.shields.io/badge/Database-PostgreSQL%20%2B%20PostGIS-031D46?style=flat-square&logo=postgresql&logoColor=white)
+![ML](https://img.shields.io/badge/Vision-YOLOv8-031D46?style=flat-square&logo=pytorch&logoColor=white)
+![Deployed](https://img.shields.io/badge/Deployed-Vercel%20%7C%20Render%20%7C%20Neon-031D46?style=flat-square&logo=vercel&logoColor=white)
 
-**For a full architecture walkthrough (tech stack rationale, core
-problems & solutions, and an explicit map of exactly where every number
-on screen comes from), see [`ARCHITECTURE.md`](ARCHITECTURE.md).**
+**[🌐 Live App](https://nece-city.vercel.app) · [⚙️ API Docs](https://nececity-backend.onrender.com/docs) · [📦 Repository](https://github.com/Oliveya-15/NeceCity)**
+
+</div>
+
+<br/>
+
+> *"Cities don't fail all at once. They fail one unreported pothole at a time."*
+
+<br/>
+
+## 📑 Table of Contents
+
+- [📖 The Idea Behind NeceCity](#-the-idea-behind-nececity)
+- [🎯 The Problem](#-the-problem)
+- [✨ What NeceCity Does](#-what-nececity-does)
+- [🖼️ Screenshots](#️-screenshots)
+- [🧠 How Problem Detection Works](#-how-problem-detection-works)
+- [⚖️ The Explainable Risk Engine](#️-the-explainable-risk-engine)
+- [🏗️ Architecture & Workflow](#️-architecture--workflow)
+- [🔁 The Model Training Loop](#-the-model-training-loop)
+- [🛠️ Tech Stack](#️-tech-stack)
+- [☁️ Free Deployment Setup](#️-free-deployment-setup)
+- [🚀 Live Demo](#-live-demo)
+- [⚡ Getting Started](#-getting-started)
+- [🔧 Environment Variables](#-environment-variables)
+- [🔌 API Overview](#-api-overview)
+- [📁 Project Structure](#-project-structure)
+- [🧪 Demo Data & Honest Limitations](#-demo-data--honest-limitations)
+- [🗺️ Roadmap](#️-roadmap)
+- [📄 License](#-license)
+- [🙏 Acknowledgments](#-acknowledgments)
+
+<br/>
 
 ---
 
-## 1. What NeceCity is
+## 📖 The Idea Behind NeceCity
 
-A city-agnostic (not hard-coded to one city) web application that turns
-"someone photographed a pothole" into "the municipality knows exactly
-where its highest-risk infrastructure problems are and what to do about
-them first" - combining Computer Vision, Data Science, Geospatial
-Analysis and a rule-based decision-support engine.
+Most city problems are noticed the same way: someone complains, someone posts a photo, or a news report goes viral. Municipalities end up reacting to whatever is loudest, not whatever is most dangerous.
 
-## 2. Problem statement
+NeceCity started from a simple question: **what if a street photo could tell a city exactly where its riskiest infrastructure problems are, and what to fix first?**
 
-Municipalities typically learn about infrastructure problems reactively
-(complaints, news reports) with no systematic way to compare severity
-across locations or verify what's already been reported. NeceCity gives
-a structured pipeline: **see the problem -> understand it -> analyze the
-pattern -> calculate risk -> prioritize -> recommend an action -> track
-status.**
+The answer became a full pipeline rather than a single model. A computer-vision model spots the problem, a human confirms it, a transparent scoring formula ranks it against everything else in the city, and a workflow tracks it from *Detected* all the way to *Resolved*.
 
-## 3. Features
+Two rules shaped every decision in this project:
 
-| Section | What it does |
+1. **No fake AI.** Every confidence value comes from a real model, every score from a documented formula, and when something isn't available the app says so instead of inventing an answer.
+2. **A human always has the last word.** Nothing the model predicts becomes a stored problem until a person confirms it.
+
+<br/>
+
+---
+
+## 🎯 The Problem
+
+| | |
 |---|---|
-| **Command Center** | City-wide overview: totals, severity/status/type breakdowns, infrastructure health score, top priorities, recent critical detections. |
-| **City Monitor** | Interactive Leaflet/OpenStreetMap map with type/severity/status/ward/date filters and a location detail panel. |
-| **Inspect & Analyze** | Upload a street photo -> local YOLO inference -> bounding boxes + confidence + suggested severity -> human Confirm/Reject/Edit Severity -> becomes a tracked Problem. |
-| **Insights** | Real Data Science analytics: distribution by type/severity/area, time trends (pandas), DBSCAN hotspot clustering (scikit-learn), recurring-problem detection, deterministic "Data Insight" statements. |
-| **Action Center** | Explainable risk-ranked priority queue, problem lifecycle (Detected -> Verified -> In Progress -> Resolved), PDF/CSV reporting. |
-| **AI Recommendations** | Chat with an assistant grounded in your city's real data (LLM-backed if you configure an API key, otherwise a data-grounded rule-based assistant - works either way), alongside a directory of verified real civic organizations and general awareness tips. |
+| **Reactive reporting** | Authorities learn about problems from complaints, not from systematic monitoring. |
+| **No way to compare** | A pothole on a quiet lane and a pothole outside a hospital look the same on a complaint list. |
+| **Duplicate reports** | The same problem is reported many times, hiding how long it has actually been ignored. |
+| **No pattern visibility** | Individual reports hide the clusters, trends and repeat offenders that point to deeper failures. |
+| **Citizens don't know who to contact** | Even a motivated resident rarely knows which organization can actually help. |
 
-## 4. Architecture
+**NeceCity's answer:** upload a street photo, let a locally-run YOLO model detect the problem, confirm it, and get an explainable priority score, a place on a live city map, analytics that reveal hotspots and trends, and a tracked path to resolution.
 
-```
-Browser (React + Leaflet + Recharts)
-        │  REST/JSON (+ multipart upload)
-        ▼
-FastAPI backend  ──►  app/ml       (YOLO inference, local, no external API)
-                 ──►  app/risk     (explainable weighted risk engine)
-                 ──►  app/analytics(pandas / scikit-learn Data Science)
-                 ──►  app/services (business logic, separate from routes)
-        │  SQLAlchemy + GeoAlchemy2
-        ▼
-PostgreSQL + PostGIS  (cities, wards, locations, images, detections,
-                        problems, risk_scores, resolutions)
+<br/>
 
-ml/  (training/evaluation/inference - separable from the web app;
-      runs locally or on Google Colab; produces the .pt weights file
-      the backend loads)
-```
+---
 
-Full detail: [`docs/architecture.md`](docs/architecture.md).
+## ✨ What NeceCity Does
 
-## 5. Tech stack (and exactly why each piece is used)
+<p align="center"><img src="public/screenshot-command-center.png" alt="NeceCity Command Center (home page)" width="820"/></p>
+<p align="center"><sub><strong>Command Center</strong>: the home page, with city health, breakdowns and top priorities at a glance</sub></p>
 
-| Layer | Technology | Used for |
+- 📊 **Command Center:** a city-wide overview with totals, severity / status / type breakdowns, an infrastructure health score, top priorities and recent critical detections.
+- 🗺️ **City Monitor:** an interactive Leaflet + OpenStreetMap map with type, severity, status, ward and date filters, plus a detail panel for any location.
+- 📷 **Report Problem:** upload a street photo, run local YOLO inference, review bounding boxes with confidence scores and a suggested severity, then **Confirm, Reject or Edit** before anything is saved. Missed something? Draw the region yourself, or log a problem manually when no model is available.
+- 📈 **Insights:** real data-science analytics, including weekly/monthly trends (pandas), DBSCAN hotspot clustering (scikit-learn), recurring-problem detection and plain-language "Data Insight" statements that trace back to real numbers.
+- 🛡️ **Action Center:** a risk-ranked priority queue, a problem lifecycle (*Detected → Verified → In Progress → Resolved*) and one-click **PDF / CSV** reports.
+- 🤖 **AI Recommendations:** a chat assistant grounded in your city's real data (LLM-backed when a key is configured, a data-driven rule-based assistant otherwise), plus a directory of verified civic organizations and practical civic tips.
+- 🏙️ **Multi-city by design:** every city is a database row, not a code constant, so adding a city never requires touching the source.
+- 🔁 **Duplicate-aware:** confirming a problem within 30 m of an existing unresolved one of the same type increases its recurrence count instead of creating a duplicate.
+- 🟢 **Always-visible model status:** a badge in the top bar shows whether the ML model is loaded, on every page.
+
+<br/>
+
+---
+
+## 🖼️ Screenshots
+
+> The **Command Center** (home page) screenshot is shown at the top of [What NeceCity Does](#-what-nececity-does).
+
+<table>
+<tr>
+<td width="50%"><img src="public/screenshot-city-monitor.png" alt="City Monitor"/><p align="center"><sub><strong>City Monitor</strong>: live filtered map of every reported problem</sub></p></td>
+<td width="50%"><img src="public/screenshot-insights.png" alt="Insights"/><p align="center"><sub><strong>Insights</strong>: trends, hotspot clusters and recurring problems</sub></p></td>
+</tr>
+<tr>
+<td width="50%"><img src="public/screenshot-action-center.png" alt="Action Center"/><p align="center"><sub><strong>Action Center</strong>: explainable risk-ranked priority queue and reports</sub></p></td>
+<td width="50%"><img src="public/screenshot-ai-recommendations.png" alt="AI Recommendations"/><p align="center"><sub><strong>AI Recommendations</strong>: data-grounded chat and verified civic organizations</sub></p></td>
+</tr>
+</table>
+
+### 📷 Report Problem: desktop and mobile
+
+<p align="center"><img src="public/screenshot-report-problem.png" alt="Report Problem on desktop" width="820"/></p>
+<p align="center"><sub><strong>Desktop</strong>: upload a photo, review YOLO detections with confidence scores, then Confirm, Reject or Edit</sub></p>
+
+<table align="center">
+<tr>
+<td align="center" width="50%"><img src="public/screenshot-report-problem-mobile-1.png" alt="Report Problem on mobile, upload and detection" width="280"/><p><sub><strong>Mobile (1/2)</strong>: upload and detection results</sub></p></td>
+<td align="center" width="50%"><img src="public/screenshot-report-problem-mobile-2.png" alt="Report Problem on mobile, review and confirm" width="280"/><p><sub><strong>Mobile (2/2)</strong>: review, severity and confirmation</sub></p></td>
+</tr>
+</table>
+
+<p align="center"><sub>📱 The layout is responsive, so problems can be reported straight from a phone in the field.</sub></p>
+
+<br/>
+
+---
+
+## 🧠 How Problem Detection Works
+
+<p align="center"><img src="public/detection-pipeline.png" alt="Detection pipeline" width="820"/></p>
+
+Every uploaded photo walks the same pipeline, and a person is always in the loop:
+
+| # | Stage | What happens |
 |---|---|---|
-| ML/CV | Python, PyTorch, Ultralytics YOLOv8, OpenCV | Training/running the object detector |
-| Data Science | Pandas, NumPy, scikit-learn, GeoPandas | Trend analysis, DBSCAN hotspot clustering, spatial preprocessing |
-| Backend | FastAPI | REST API + serving the ML model |
-| Database | PostgreSQL + PostGIS | Relational data + real spatial queries (`ST_DWithin`, GIST indexes) |
-| Frontend | React + Tailwind CSS | UI |
-| Map | Leaflet + OpenStreetMap | Free interactive mapping, no paid API |
-| Charts | Recharts | Distribution/trend visualization |
-| Reporting | ReportLab (PDF), CSV | Action Center exports |
-| Containerization | Docker + Docker Compose | Reproducible local/deployment environment |
+| 1 | **Validate** | File type (JPEG / PNG / WebP), size limit (8 MB) and image integrity are checked with Pillow before anything else. |
+| 2 | **Detect** | The project's own YOLOv8n model runs locally (no external AI API) and finds up to 6 problem classes: `pothole`, `road_damage`, `garbage`, `waterlogging`, `damaged_road_sign`, `open_drain`. |
+| 3 | **Flag uncertainty** | Boxes above the confidence threshold are shown normally. Boxes between a low floor and the threshold are still shown, but marked **"low confidence, please verify"** rather than silently hidden. |
+| 4 | **Suggest severity** | A documented, deterministic heuristic (class weight + relative box area) pre-fills a severity. It is explicitly *not* a second ML model, and the reviewer can always change it. |
+| 5 | **Human review** | The reviewer **Confirms, Rejects or Edits** each detection, or draws a region the model missed. |
+| 6 | **Place or merge** | A confirmed detection becomes a tracked **Problem**. If an unresolved problem of the same type exists within 30 m (PostGIS `ST_DWithin`), its recurrence count increases instead of creating a duplicate. |
+| 7 | **Score** | The risk engine computes an explainable score for the problem (see below). |
 
-No paid API is required anywhere in this stack.
+**Graceful degradation:** if no model file is present, the app does not crash. It reports `model not configured`, every other page keeps working, and the **Manual Entry** form lets you log a problem directly.
 
-## 6. Project structure
+<br/>
+
+---
+
+## ⚖️ The Explainable Risk Engine
+
+<p align="center"><img src="public/risk-engine.png" alt="Risk engine" width="820"/></p>
+
+Priority is never a hidden number. Each problem gets a **0 to 1 risk score** from five weighted factors, and the Action Center shows *why* a problem ranks where it does.
+
+| Factor | Weight | What it measures |
+|---|---|---|
+| **Severity** | 0.35 | Low, Medium, High or Critical, as confirmed by the reviewer |
+| **Recurrence** | 0.20 | How many confirmed detections have landed on or near this spot |
+| **Density** | 0.20 | How many other problems lie within 150 m (real metres via PostGIS `geography`) |
+| **Road importance** | 0.15 | Local street, arterial road or highway |
+| **Infrastructure proximity** | 0.10 | Whether it is near critical infrastructure such as a hospital, school or major junction |
+
+Weights live in configuration, are validated to sum to 1.0 at startup, and every stored score records the formula version that produced it. The score is recomputed whenever a problem's status changes, so it always reflects the current state of the neighbourhood.
+
+<br/>
+
+---
+
+## 🏗️ Architecture & Workflow
+
+<p align="center"><img src="public/architecture-diagram.png" alt="System architecture" width="820"/></p>
+
+<p align="center"><img src="public/user-flow.png" alt="Problem lifecycle and user flow" width="820"/></p>
+
+NeceCity is a **modular monolith**: one backend process, one database, one frontend build. Every concern lives in its own folder, so any part can be read, tested or replaced on its own.
+
+| Layer | Responsibility |
+|---|---|
+| `api/routes/` | Thin HTTP handlers only, with no business logic |
+| `services/` | Orchestration: detection → problem, city summaries, reports, chat |
+| `analytics/` | Data science: pandas trends, scikit-learn DBSCAN hotspots, recurring-problem detection |
+| `risk/` | The explainable weighted scoring engine |
+| `ml/` | YOLO inference wrapper with graceful degradation |
+| `models/` + `schemas/` | SQLAlchemy ORM + Pydantic contracts |
+
+**Where every number on screen comes from:** city stats, map markers and charts are live SQL queries; trends are pandas on real timestamps; hotspots are DBSCAN on real coordinates; detections are real model output or an honest "not available". Full data-flow map in [`ARCHITECTURE.md`](ARCHITECTURE.md).
+
+<br/>
+
+---
+
+## 🔁 The Model Training Loop
+
+<p align="center"><img src="public/ml-training-loop.png" alt="ML training loop" width="820"/></p>
+
+The ML pipeline is deliberately separate from the web app, so training never affects what is running.
+
+1. **Prepare data:** images and YOLO-format labels are validated against a single shared class list (`ml/data/classes.yaml`).
+2. **Train:** YOLOv8n with transfer learning, locally or on Google Colab (`notebooks/NeceCity_Training_Colab.ipynb`).
+3. **Evaluate:** real precision, recall and mAP numbers from `ml/evaluation/evaluate.py`.
+4. **Deploy weights:** the best checkpoint goes to `ml/weights/`, and the backend loads it at startup.
+5. **Learn from users:** every detection a reviewer confirms (and every region they draw) is stored. `ml/training/export_feedback.py` turns these into new training data, so the model improves on exactly the kind of photos your users upload. Only **confirmed** detections are ever exported.
+
+A provenance file (`nececity_yolo.meta.json`) records what the model was trained on, and the app shows an honest warning if a model was trained only on synthetic placeholder data.
+
+<br/>
+
+---
+
+## 🛠️ Tech Stack
+
+<p align="center"><img src="public/tech-stack.png" alt="Tech stack" width="820"/></p>
+
+<table>
+<tr><th>Layer</th><th>Technology</th></tr>
+<tr><td>Frontend</td><td>React 18 · Vite · React Router · Tailwind CSS · Recharts · Leaflet + OpenStreetMap · Lucide icons</td></tr>
+<tr><td>Backend</td><td>Python · FastAPI · Pydantic · SQLAlchemy · Alembic</td></tr>
+<tr><td>Database</td><td>PostgreSQL 16 + PostGIS 3 (GeoAlchemy2, GIST spatial indexes)</td></tr>
+<tr><td>Computer Vision</td><td>YOLOv8n (Ultralytics, PyTorch) for training · ONNX Runtime for lightweight production inference</td></tr>
+<tr><td>Data Science</td><td>pandas · NumPy · scikit-learn (DBSCAN) · Shapely</td></tr>
+<tr><td>Reporting</td><td>ReportLab (PDF) · Python <code>csv</code></td></tr>
+<tr><td>AI Chat</td><td>Any OpenAI-compatible LLM API (Groq in production) with a rule-based fallback</td></tr>
+<tr><td>Geocoding</td><td>OpenStreetMap Nominatim (free, no key)</td></tr>
+<tr><td>Containers</td><td>Docker + Docker Compose</td></tr>
+<tr><td>Deployment</td><td>Vercel (frontend) · Render (backend) · Neon (PostgreSQL + PostGIS)</td></tr>
+</table>
+
+**No paid service is required anywhere in this stack.** The map, geocoder, model inference and database all run free.
+
+<br/>
+
+---
+
+## ☁️ Free Deployment Setup
+
+<p align="center"><img src="public/deployment-diagram.png" alt="Deployment architecture" width="820"/></p>
+
+| Part | Host | Why |
+|---|---|---|
+| Frontend | **Vercel** | Free static hosting, auto-deploys from GitHub |
+| Backend | **Render** (free web service, 512 MB) | Runs FastAPI directly from the repository |
+| Database | **Neon** (free Postgres with PostGIS) | The app needs real spatial queries, so a plain database would not work |
+| Chat LLM | **Groq** (free tier) | OpenAI-compatible API, configured through environment variables |
+
+**The one important engineering decision:** the training stack (PyTorch + Ultralytics) needs far more than 512 MB of RAM just to import. For production, the YOLO model is exported to **ONNX** and served with **ONNX Runtime**, which fits comfortably in a free tier. The backend picks the engine automatically from the model file extension (`.pt` uses Ultralytics, `.onnx` uses ONNX Runtime), so local development and Docker are unchanged.
+
+Export command:
+
+```bash
+yolo export model=ml/weights/nececity_yolo.pt format=onnx imgsz=640 opset=12
+```
+
+Production uses the slim `backend/requirements-deploy.txt` (no torch, no OpenCV, no GeoPandas).
+
+> ⏳ The backend is on Render's free tier, so the first request after a period of inactivity can take about a minute to wake up. That is infrastructure, not a bug.
+
+<br/>
+
+---
+
+## 🚀 Live Demo
+
+| | |
+|---|---|
+| 🌐 **App** | [nece-city.vercel.app](https://nece-city.vercel.app) |
+| ⚙️ **API docs** | [nececity-backend.onrender.com/docs](https://nececity-backend.onrender.com/docs) |
+| 📦 **Source** | [github.com/Oliveya-15/NeceCity](https://github.com/Oliveya-15/NeceCity) |
+
+> 🏙️ **Siliguri** and **Kolkata** contain demo data. The other cities in the selector are marked **Demo** and have no data yet.
+
+<br/>
+
+---
+
+## ⚡ Getting Started
+
+### Option 1: Docker (fastest, runs database + backend + frontend)
+
+```bash
+git clone https://github.com/Oliveya-15/NeceCity.git
+cd NeceCity
+cp .env.example .env
+docker compose up --build
+```
+
+Then open:
+
+- **App:** http://localhost:8080
+- **API docs:** http://localhost:8000/docs
+
+The backend container applies migrations and seeds demo data on first start.
+
+### Option 2: Manual setup
+
+```bash
+# 1. Database (PostgreSQL + PostGIS)
+docker run -d --name nececity-db \
+  -e POSTGRES_USER=nececity -e POSTGRES_PASSWORD=nececity -e POSTGRES_DB=nececity \
+  -p 5432:5432 postgis/postgis:16-3.4
+
+# 2. Backend
+cd backend
+python -m venv .venv && .venv\Scripts\activate      # Windows
+pip install -r requirements.txt
+cp .env.example .env
+python -m alembic upgrade head
+python -m app.seed.seed_data
+uvicorn app.main:app --reload --port 8000
+
+# 3. Frontend (new terminal)
+cd frontend
+npm install
+cp .env.example .env
+npm run dev                                         # http://localhost:5173
+```
+
+### Training your own model
+
+```bash
+cd ml
+pip install -r requirements.txt
+python data/validate_dataset.py --dataset data/real_dataset --classes data/classes.yaml
+cd training && python train.py
+cd ../evaluation && python evaluate.py --weights ../training/runs/detect/nececity_yolo/weights/best.pt --dataset ../training/dataset.yaml
+```
+
+Copy the resulting `best.pt` to `ml/weights/nececity_yolo.pt` and restart the backend. Details: [`ml/data/README.md`](ml/data/README.md) and [`ml/weights/README.md`](ml/weights/README.md).
+
+Run the backend tests with `pytest` from inside `backend/`.
+
+<br/>
+
+---
+
+## 🔧 Environment Variables
+
+| Variable | Used by | Purpose |
+|---|---|---|
+| `DATABASE_URL` | Backend | Full SQLAlchemy URL (`postgresql+psycopg2://...`). Overrides the `POSTGRES_*` values. |
+| `POSTGRES_USER` / `PASSWORD` / `DB` / `HOST` / `PORT` | Backend | Individual database settings (convenient for Docker Compose) |
+| `MODEL_PATH` | Backend | Path to the weights (`.pt` for Ultralytics, `.onnx` for ONNX Runtime) |
+| `MODEL_CONFIDENCE_THRESHOLD` | Backend | Confidence above which a detection counts as confident |
+| `MODEL_USE_TTA` | Backend | Test-time augmentation (slower, more robust; not available with ONNX) |
+| `CORS_ORIGINS` | Backend | JSON list of allowed frontend origins |
+| `LLM_API_KEY` / `LLM_API_BASE_URL` / `LLM_MODEL` | Backend | Optional. Enables the LLM-backed chat. Leave the key empty for the rule-based assistant. |
+| `RISK_WEIGHT_*` | Backend | The five risk weights (must sum to 1.0) |
+| `VITE_API_BASE_URL` | Frontend | Backend API base URL, baked in at build time |
+
+Every variable is documented in the `.env.example` files. **No secrets are committed.**
+
+<br/>
+
+---
+
+## 🔌 API Overview
+
+Interactive docs are generated by FastAPI at `/docs`. Route groups under `/api/v1`:
+
+| Group | Purpose |
+|---|---|
+| `/cities` | City list and per-city summaries |
+| `/map` | Filtered problem markers for City Monitor |
+| `/analyze` · `/detections` | Image upload, YOLO inference, confirm / reject / edit |
+| `/problems` | Problem records, manual entry and status changes |
+| `/analytics` | Overview, trends and hotspot clusters |
+| `/risk` | Risk scores and the priority queue |
+| `/reports` | PDF and CSV exports |
+| `/recommendations` · `/chat` | City insights, civic organizations and the chat assistant |
+| `/ml` | Live model status |
+| `/health` | Health check |
+
+<br/>
+
+---
+
+## 📁 Project Structure
 
 ```
 nececity/
-├── backend/          FastAPI app, SQLAlchemy models, Alembic migrations, tests
+├── backend/            FastAPI app, SQLAlchemy models, Alembic migrations, tests
 │   └── app/
-│       ├── api/routes/    thin route handlers only
-│       ├── services/      business logic
-│       ├── analytics/     Data Science (Insights page)
-│       ├── risk/          explainable risk engine (Action Center)
-│       ├── ml/            inference service (graceful degradation)
-│       └── seed/          demo/seed data generator
-├── ml/               Training pipeline - separable from the web app
-│   ├── data/         classes.yaml, dataset docs, demo dataset, validator
-│   ├── training/      train.py, dataset.yaml
-│   ├── evaluation/    evaluate.py (real precision/recall/mAP)
-│   ├── inference/      standalone predict.py CLI
-│   ├── configs/        model_config.yaml, training_config.yaml
-│   └── weights/         trained .pt file goes here (gitignored)
-├── notebooks/         Google Colab training notebook
-├── frontend/          React + Vite + Tailwind
-├── scripts/           utility scripts (e.g. demo dataset generator)
-├── docs/              architecture, setup, database, ml-pipeline, dataset, api, roadmap
+│       ├── api/routes/     thin route handlers
+│       ├── services/       business logic
+│       ├── analytics/      pandas + DBSCAN (Insights)
+│       ├── risk/           explainable risk engine
+│       ├── ml/             YOLO / ONNX inference wrapper
+│       ├── models/         SQLAlchemy ORM
+│       ├── schemas/        Pydantic contracts
+│       └── seed/           demo data generator
+├── frontend/           React + Vite + Tailwind app (6 pages)
+├── ml/                 Training pipeline, separable from the web app
+│   ├── data/               classes, datasets, validator
+│   ├── training/           train.py, feedback export
+│   ├── evaluation/         evaluate.py
+│   ├── inference/          standalone predict.py
+│   └── weights/            trained model + provenance file
+├── notebooks/          Google Colab training notebook
+├── scripts/            utility scripts
+├── public/             README images
 ├── docker-compose.yml
-└── .env.example
+├── ARCHITECTURE.md     full architecture and data-flow reference
+└── README.md
 ```
 
-## 7. Prerequisites
-
-Install on your machine:
-
-- **Git**
-- **Python 3.11+**
-- **Node.js 20+** and npm
-- **Docker Desktop** (recommended path - runs Postgres/PostGIS for you)
-- **PostgreSQL 16 + PostGIS 3** if you'd rather run the database outside Docker
-- Optional: an NVIDIA GPU + CUDA for faster local model training (not required - CPU works, and Google Colab provides a free GPU)
-- A Google account only if you choose to train the model on Google Colab
-
-## 8. Local setup (Windows-friendly - run each block in the terminal named)
-
-### Fastest path: Docker Compose (runs database + backend + frontend)
-
-**PowerShell, in the project root:**
-```powershell
-copy .env.example .env
-docker compose up --build
-```
-Then open **http://localhost:8080** (frontend) - the backend API is at
-`http://localhost:8000/api/v1`. The backend container runs migrations and
-seeds demo data automatically on first start.
-
-### Manual path (more control, e.g. while developing)
-
-**PowerShell - start the database (skip if you have Postgres+PostGIS installed natively):**
-```powershell
-docker run -d --name nececity-db -e POSTGRES_USER=nececity -e POSTGRES_PASSWORD=nececity -e POSTGRES_DB=nececity -p 5432:5432 postgis/postgis:16-3.4
-```
-
-**Backend terminal:**
-```powershell
-cd backend
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-copy .env.example .env
-python -m alembic upgrade head
-python -m app.seed.seed_data
-uvicorn app.main:app --reload
-```
-Backend now running at http://localhost:8000 (docs at `/docs`).
-
-**Frontend terminal:**
-```powershell
-cd frontend
-npm install
-copy .env.example .env
-npm run dev
-```
-Frontend now running at http://localhost:5173.
-
-## 9. Environment variables
-
-See [`backend/.env.example`](backend/.env.example),
-[`frontend/.env.example`](frontend/.env.example), and
-[`.env.example`](.env.example) (Docker Compose level). Every variable is
-documented inline. Nothing is hard-coded; no secrets are committed.
-
-## 10. Database setup
-
-Migrations are managed with Alembic (`backend/alembic/`). The schema
-(`cities`, `wards`, `locations`, `images`, `detections`, `problems`,
-`risk_scores`, `resolutions`) uses real PostGIS `Geometry` columns and
-GIST spatial indexes - see [`docs/database.md`](docs/database.md) for the
-full entity-relationship explanation and why PostGIS is needed at all.
-
-```powershell
-cd backend
-python -m alembic upgrade head      # apply migrations
-python -m app.seed.seed_data        # load demo data (add --reset to wipe and regenerate)
-```
-
-## 11. Docker setup
-
-```powershell
-docker compose up --build
-```
-Services: `database` (postgis/postgis:16-3.4), `backend` (FastAPI, runs
-migrations+seed on start), `frontend` (nginx serving the built React app).
-See `docker-compose.yml` - every value is either a sane default or read
-from `.env`.
-
-## 12. Dataset setup / 13. Annotation / 14. Model training / 15. Evaluation / 16. Weight placement / 17. Running inference
-
-All covered in depth in [`ml/data/README.md`](ml/data/README.md) (dataset
-& annotation) and [`ml/weights/README.md`](ml/weights/README.md) (weight
-placement). Quick version:
-
-```powershell
-cd ml
-pip install -r requirements.txt
-python data/validate_dataset.py --dataset data/demo_dataset --classes data/classes.yaml
-
-cd training
-python train.py                     # trains YOLOv8n, transfer learning by default
-
-cd ..\evaluation
-python evaluate.py --weights ..\training\runs\detect\nececity_yolo\weights\best.pt --dataset ..\training\dataset.yaml
-
-copy ..\training\runs\detect\nececity_yolo\weights\best.pt ..\weights\nececity_yolo.pt
-```
-Restart the backend and Inspect & Analyze will use the new weights.
-Training on **Google Colab** instead: open
-[`notebooks/NeceCity_Training_Colab.ipynb`](notebooks/NeceCity_Training_Colab.ipynb).
-
-**Important:** the bundled `ml/data/demo_dataset/` is **synthetic
-placeholder data** (programmatically drawn shapes), only for testing the
-pipeline mechanics - see the big warning at the top of
-`ml/data/README.md` before you assume it trains a real detector.
-
-## 18. Running frontend/backend
-
-Covered in section 8 above.
-
-For Everytime : docker compose up --build
-Once you see Uvicorn running on http://0.0.0.0:8000, open:
-
-http://localhost:8080 — the app
-http://localhost:8000/docs — API docs, if you want to poke at it directly
-
-New Changes Push Command :
-git add .
-git commit -m "Describe what changes you made here"
-git push
-
-## 19. Demo data
-
-`backend/app/seed/seed_data.py` populates all 8 configured West Bengal
-cities and generates ~100 realistic (but clearly synthetic) demo problems
-for Siliguri and Kolkata - varied types, severities, wards, dates,
-statuses, and some deliberately clustered "hotspots" so DBSCAN and
-recurrence analytics have something real to find. Every demo `Problem`
-row has `is_demo=True` and the UI labels it accordingly. Run with
-`--reset` to wipe and regenerate.
-
-## 20. API overview
-
-Full endpoint list: [`docs/api.md`](docs/api.md). Interactive docs are
-also auto-generated by FastAPI at **http://localhost:8000/docs** once the
-backend is running.
-
-## 21. Troubleshooting
-
-| Symptom | Likely cause / fix |
-|---|---|
-| Frontend shows "Can't reach the NeceCity backend" | Backend isn't running, or `VITE_API_BASE_URL` doesn't match where it's listening. |
-| Inspect & Analyze says "ML model is not configured" | Expected until you train a model and place weights at `ml/weights/nececity_yolo.pt` (see section 12-17 above). Every other page still works. |
-| `alembic upgrade head` fails to connect | Check `DATABASE_URL`/`POSTGRES_*` in `backend/.env` and that Postgres/PostGIS is actually running and reachable. |
-| `CREATE EXTENSION postgis` permission error | Your Postgres role needs `CREATEDB`/superuser rights the first time; the official `postgis/postgis` Docker image handles this automatically. |
-| Map tiles don't load | Needs outbound internet access to `tile.openstreetmap.org` (free, no key needed). |
-| `pip install torch` is very large/slow | Expected - see `ml/requirements.txt` comment. A CPU-only PyTorch build is fine for this project's scale. |
-
-## 22. Future enhancement
-
-See [`docs/future-roadmap.md`](docs/future-roadmap.md) for the full list
-(authentication/RBAC, more cities, active learning, segmentation, video
-analysis, predictive risk modelling, department assignment, scheduled
-reports, ...) and, more importantly, *why* the current codebase was
-structured so these can be added without a rewrite.
+<br/>
 
 ---
 
-## Known limitations of this minor version
+## 🧪 Demo Data & Honest Limitations
 
-- No authentication - anyone with network access to the app can act on
-  data (documented, not hidden - see Security section of the original
-  project brief and `docs/architecture.md`).
-- The bundled ML dataset is synthetic placeholder data; a real trained
-  model requires you to collect/annotate real images (`ml/data/README.md`).
-- Ward boundary polygons are optional and mostly unpopulated in demo
-  data; ward *filtering* still works via `problems.ward_id` regardless.
-- Hotspot/trend analytics need a reasonable amount of data to produce
-  meaningful output - very small/fresh cities will show sparse insights.
+This project is open about what is real and what is not.
 
-## License / academic use
+- **Demo data is labeled.** About 100 sample problems are generated for Siliguri and Kolkata. Every demo row has `is_demo = true`, and the UI says so. They are not real municipal records.
+- **The model is trained on a small real dataset.** It works as a working proof of the full pipeline, but it is not a production-grade detector. Accuracy would improve with more annotated images, and the built-in feedback loop exists for exactly that.
+- **No authentication yet.** Anyone with access to the app can act on data. Role-based access is on the roadmap.
+- **Uploaded photos on the free host are not permanent.** Render's free disk resets on restart, so uploaded images can disappear. Database records are unaffected.
+- **Hotspot and trend analytics need data.** Very small or fresh cities will show sparse insights.
+- **Civic organization directory:** every organization links to its own official website. No local phone numbers or addresses are listed, because a wrong contact detail for a real organization would mislead someone.
 
-Built as an MCA minor project. Adapt freely for coursework, portfolio, or
-further development.
+<br/>
 
+---
 
+## 🗺️ Roadmap
 
+- [ ] Authentication and role-based access (citizen, reviewer, municipal officer)
+- [ ] Real data for more cities
+- [ ] Active learning: surface the photos the model is least sure about for annotation
+- [ ] Instance segmentation for precise damage area
+- [ ] Video and dashcam analysis
+- [ ] Predictive risk modelling (where problems are likely to appear next)
+- [ ] Assignment of problems to municipal departments
+- [ ] Scheduled and emailed reports
+- [ ] Persistent image storage (object storage) for deployed environments
 
+<br/>
 
+---
+
+## 📄 License
+
+Released under the [MIT License](LICENSE). Adapt freely for coursework, portfolio or further development.
+
+<br/>
+
+## 🙏 Acknowledgments
+
+- **Ultralytics**, for YOLOv8
+- **OpenStreetMap** contributors, for the free map tiles and Nominatim geocoding
+- **PostGIS**, **FastAPI**, **React** and the wider open-source community this project stands on
+- Everyone who reviewed and tested NeceCity along the way
+
+<br/>
+
+<div align="center">
+
+**Built end to end: research, design, machine learning, code and deployment.**
+
+<sub>NeceCity · MCA Minor Project · 2026</sub>
+
+</div>
